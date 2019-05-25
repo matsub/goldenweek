@@ -1,9 +1,5 @@
-STUN on UDP
-
-RFC5389のまとめですが、以下のは省略しています。また、STUN Attributesは気分で追加しています。
-
-- TCP部分
-- Long-Term Credential
+# RFC5389 自分用まとめ
+RFC5389実装するときの情報まとめ。元ネタ: https://tools.ietf.org/html/rfc5389
 
 # Header Structure
 ```
@@ -63,8 +59,6 @@ RFC5389のまとめですが、以下のは省略しています。また、STUN
 #  Base Protocol Procedures
 
 ## Forming a Request or an Indication
-(STUNの実装者にはあんま関係ない)
-
 - If the agent is sending a request, it SHOULD add a SOFTWARE attribute to the request.
 - Agents MAY include a SOFTWARE attribute in indications, depending on the method.
 - For the Binding method with no authentication, no attributes are required unless the usage specifies otherwise.
@@ -81,7 +75,7 @@ The STUN usage must specify which transport protocol is used, and how the agent 
     - doubling after each retransmission.
     -  The RTO is an estimate of the round-trip time (RTT), and is computed as described in RFC 2988, with two exceptions.
         1. the initial value for RTO SHOULD be configurable (rather than the 3 s recommended in RFC 2988) and SHOULD be greater than 500 ms.
-        2. the value of RTO SHOULD NOT be rounded up to the nearest second.  Rather, a 1 ms accuracy SHOULD be maintained
+        2. the value of RTO SHOULD NOT be rounded up to the nearest second. Rather, a 1 ms accuracy SHOULD be maintained
     - The value for RTO SHOULD be cached by a client after the completion of the transaction
         - and used as the starting value for RTO for the next transaction to the same server (based on equality of IP address).
         - The value SHOULD be considered stale and discarded after 10 minutes.
@@ -90,10 +84,91 @@ The STUN usage must specify which transport protocol is used, and how the agent 
 - If, after the last request, a duration equal to Rm times the RTO has passed without a response the client SHOULD consider the transaction to have failed.
     - Rm SHOULD be configurable and SHOULD have a default of 16.
 - A STUN transaction over UDP is also considered failed if there has been a hard ICMP error.
-    - e.g.  when RTO = 500 ms
+    - e.g. when RTO = 500 ms
         - requests would be sent at times 0 ms, 500 ms, 1500 ms, 3500 ms, 7500 ms, 15500 ms, and 31500 ms.
         - If the client has not received a response after 39500 ms
         - the client will consider the transaction to have timed out.
+
+## [WIP] Sending over TCP or TLS-over-TCP
+For TCP and TLS-over-TCP, the client opens a TCP connection to the server.
+
+In some usages of STUN, STUN is sent as the only protocol over the TCP connection.
+
+In this case, it can be sent without the aid of any additional framing or demultiplexing.
+
+In other usages, or with other extensions, it may be multiplexed with other data over a TCP connection.
+
+In that case, STUN MUST be run on top of some kind of framing protocol, specified by the usage or extension, which allows for the agent to extract complete STUN messages and complete application layer messages.
+
+The STUN service running on the well- known port or ports discovered through the DNS procedures in Section 9 is for STUN alone, and not for STUN multiplexed with other data.
+
+Consequently, no framing protocols are used in connections to those servers.
+
+When additional framing is utilized, the usage will specify how the client knows to apply it and what port to connect to.
+
+For example, in the case of ICE connectivity checks, this information is learned through out-of-band negotiation between client and server.
+
+When STUN is run by itself over TLS-over-TCP, the TLS_RSA_WITH_AES_128_CBC_SHA ciphersuite MUST be implemented at a minimum.
+
+Implementations MAY also support any other ciphersuite.
+
+When it receives the TLS Certificate message, the client SHOULD verify the certificate and inspect the site identified by the certificate.
+
+If the certificate is invalid or revoked, or if it does not identify the appropriate party, the client MUST NOT send the STUN message or otherwise proceed with the STUN transaction.
+
+The client MUST verify the identity of the server.
+
+To do that, it follows the identification procedures defined in Section 3.1 of RFC 2818 [RFC2818].
+
+Those procedures assume the client is dereferencing a URI.
+
+For purposes of usage with this specification, the client treats the domain name or IP address used in Section 8.1 as the host portion of the URI that has been dereferenced.
+
+Alternatively, a client MAY be configured with a set of domains or IP addresses that are trusted; if a certificate is received that identifies one of those domains or IP addresses, the client considers the identity of the server to be verified.
+
+When STUN is run multiplexed with other protocols over a TLS-over-TCP connection, the mandatory ciphersuites and TLS handling procedures operate as defined by those protocols.
+
+Reliability of STUN over TCP and TLS-over-TCP is handled by TCP itself, and there are no retransmissions at the STUN protocol level.
+
+However, for a request/response transaction, if the client has not received a response by Ti seconds after it sent the SYN to establish the connection, it considers the transaction to have timed out.
+
+Ti SHOULD be configurable and SHOULD have a default of 39.5s.
+
+This value has been chosen to equalize the TCP and UDP timeouts for the default initial RTO.
+
+In addition, if the client is unable to establish the TCP connection, or the TCP connection is reset or fails before a response is received, any request/response transaction in progress is considered to have failed.
+
+The client MAY send multiple transactions over a single TCP (or TLS- over-TCP) connection, and it MAY send another request before receiving a response to the previous.
+
+The client SHOULD keep the connection open until it:
+
+   o  has no further STUN requests or indications to send over that
+      connection, and
+
+   o  has no plans to use any resources (such as a mapped address
+      (MAPPED-ADDRESS or XOR-MAPPED-ADDRESS) or relayed address
+      [BEHAVE-TURN]) that were learned though STUN requests sent over
+      that connection, and
+
+   o  if multiplexing other application protocols over that port, has
+      finished using that other application, and
+
+   o  if using that learned port with a remote peer, has established
+      communications with that remote peer, as is required by some TCP
+      NAT traversal techniques (e.g., [MMUSIC-ICE-TCP]).
+
+At the server end, the server SHOULD keep the connection open, and let the client close it, unless the server has determined that the connection has timed out (for example, due to the client disconnecting from the network).
+
+Bindings learned by the client will remain valid in intervening NATs only while the connection remains open.
+
+Only the client knows how long it needs the binding.
+
+The server SHOULD NOT close a connection if a request was received over that connection for which a response was not sent.
+
+A server MUST NOT ever open a connection back towards the client in order to send a response.
+
+Servers SHOULD follow best practices regarding connection management in cases of overload.
+
 
 ## Receiving a STUN Message
 When a STUN agent receives a STUN message, it first checks that the message obeys the rules of Section 6.
@@ -110,8 +185,6 @@ When a STUN agent receives a STUN message, it first checks that the message obey
 -  If any errors are detected, the message is silently discarded.
 - Unknown comprehension-optional attributes MUST be ignored by the agent.
 - Known-but-unexpected attributes SHOULD be ignored by the agent.
-
----
 
 ## Processing a Request
 -  If the request contains one or more unknown comprehension-required attributes
@@ -137,32 +210,67 @@ When a STUN agent receives a STUN message, it first checks that the message obey
 ### Forming a Success or Error Response
 - For an error response, the server MUST add an ERROR-CODE attribute
     - The reason phrase is not fixed, but SHOULD be something suitable for the error code.
-    - For certain errors, additional attributes are added to the message.
-    - 
+    - For certain errors, additional attributes are added to the message. (spelled out in the description).
+    - Extensions may define other errors and/or additional attributes to add in error cases.
+    - When forming the success response, the server adds a XOR-MAPPED-ADDRESS attribute to the response, where the contents of the attribute are the source transport address of the request message.
+        - For UDP, this is the source IP address and source UDP port of the request message.
+        - For TCP and TLS-over-TCP, this is the source IP address and source TCP port of the TCP connection as seen by the server.
+
 
 ## Processing an Indication
+- If the indication contains unknown comprehension-required attributes,
+    - the indication is discarded and processing ceases.
+    - The agent then does any additional checking that the method or the specific usage requires.
+- If all the checks succeed, the agent then processes the indication.
+- No response is generated for an indication.
+- For the Binding method, no additional checking or processing is required, unless the usage specifies otherwise.
+- Since indications are not re-transmitted over UDP (unlike requests), there is no need to handle re-transmissions of indications at the sending agent.
 
 ### Processing a Success Response
+- If the success response contains unknown comprehension-required attributes,
+    - the response is discarded and the transaction is considered to have failed.
+    - The client then does any additional checking that the method or the specific usage requires.
+- If all the checks succeed, the client then processes the success response.
+- For the Binding method, the client checks that the XOR-MAPPED-ADDRESS attribute is present in the response.
+    - The client checks the address family specified.
+    - If it is an unsupported address family, the attribute SHOULD be ignored.
+    - If it is an unexpected but supported address family
+        - (for example, the Binding transaction was sent over IPv4, but the address family specified is IPv6),
+        - then the client MAY accept and use the value.
 
 ### Processing an Error Response
+- If the error response contains unknown comprehension-required attributes,
+    - or if the error response does not contain an ERROR-CODE attribute,
+        - then the transaction is simply considered to have failed.
+        - The client then does any processing specified by the authentication mechanism.
+- The processing at this point depends on the error code, the method, and the usage; the following are the default rules:
 
+#### Default Rules with Processing an Error Response
+- If the error code is 300 through 399,
+    - the client SHOULD consider the transaction as failed unless the ALTERNATE-SERVER extension is being used.
+- If the error code is 400 through 499,
+    - the client declares the transaction failed;
+    - in the case of 420 (Unknown Attribute),
+        - the response should contain a UNKNOWN-ATTRIBUTES attribute that gives additional information.
+- If the error code is 500 through 599,
+    - the client MAY resend the request;
+    - clients that do so MUST limit the number of times they do this.
+- Any other error code causes the client to consider the transaction failed.
 
 # Basic Server Behavior
 - The STUN server MUST support the Binding method.
 - It SHOULD NOT utilize the short-term or long-term credential mechanism.
 - It SHOULD NOT utilize the ALTERNATE-SERVER mechanism.
-- (TCPは許して) It MUST support UDP and TCP.
+- It MUST support UDP and TCP.
 - It MAY support STUN over TCP/TLS; however, TLS provides minimal security benefits in this basic mode of operation.
 - It MAY utilize the FINGERPRINT mechanism but MUST NOT require it.
     - Since the stand-alone server only runs STUN, FINGERPRINT provides no benefit.
     - Requiring it would break compatibility with RFC 3489, and such compatibility is desirable in a stand-alone server.
-- (無視する) Stand-alone STUN servers SHOULD support backwards compatibility with [RFC3489] clients, as described in Section 12.
+- Stand-alone STUN servers SHOULD support backwards compatibility with [RFC3489] clients, as described in Section 12.
 
-- (あっハイ) It is RECOMMENDED that administrators of STUN servers provide DNS entries for those servers as described in Section 9.
+- It is RECOMMENDED that administrators of STUN servers provide DNS entries for those servers as described in Section 9.
 - A basic STUN server is not a solution for NAT traversal by itself.
     - However, it can be utilized as part of a solution through STUN usages.
-
-## でも
 - the STUN server functionality in an agent supporting connectivity checks would utilize short-term credentials.
 
 
@@ -192,6 +300,8 @@ When a STUN agent receives a STUN message, it first checks that the message obey
         - the response MUST be discarded, as if it was never received.
         - This means that retransmits, if applicable, will continue.
 
-# STUN Attributes
-これを読みまくるしかない
-https://tools.ietf.org/html/rfc5389#section-15
+# [WIP] Long-Term Credential Mechanism
+
+# [WIP] STUN Attributes
+
+# [WIP] Security Considerations
