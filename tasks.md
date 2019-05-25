@@ -89,86 +89,55 @@ The STUN usage must specify which transport protocol is used, and how the agent 
         - If the client has not received a response after 39500 ms
         - the client will consider the transaction to have timed out.
 
-## [WIP] Sending over TCP or TLS-over-TCP
-For TCP and TLS-over-TCP, the client opens a TCP connection to the server.
-
-In some usages of STUN, STUN is sent as the only protocol over the TCP connection.
-
-In this case, it can be sent without the aid of any additional framing or demultiplexing.
-
-In other usages, or with other extensions, it may be multiplexed with other data over a TCP connection.
-
-In that case, STUN MUST be run on top of some kind of framing protocol, specified by the usage or extension, which allows for the agent to extract complete STUN messages and complete application layer messages.
-
-The STUN service running on the well- known port or ports discovered through the DNS procedures in Section 9 is for STUN alone, and not for STUN multiplexed with other data.
-
-Consequently, no framing protocols are used in connections to those servers.
-
-When additional framing is utilized, the usage will specify how the client knows to apply it and what port to connect to.
-
-For example, in the case of ICE connectivity checks, this information is learned through out-of-band negotiation between client and server.
-
-When STUN is run by itself over TLS-over-TCP, the TLS_RSA_WITH_AES_128_CBC_SHA ciphersuite MUST be implemented at a minimum.
-
-Implementations MAY also support any other ciphersuite.
-
-When it receives the TLS Certificate message, the client SHOULD verify the certificate and inspect the site identified by the certificate.
-
-If the certificate is invalid or revoked, or if it does not identify the appropriate party, the client MUST NOT send the STUN message or otherwise proceed with the STUN transaction.
-
-The client MUST verify the identity of the server.
-
-To do that, it follows the identification procedures defined in Section 3.1 of RFC 2818 [RFC2818].
-
-Those procedures assume the client is dereferencing a URI.
-
-For purposes of usage with this specification, the client treats the domain name or IP address used in Section 8.1 as the host portion of the URI that has been dereferenced.
-
-Alternatively, a client MAY be configured with a set of domains or IP addresses that are trusted; if a certificate is received that identifies one of those domains or IP addresses, the client considers the identity of the server to be verified.
-
-When STUN is run multiplexed with other protocols over a TLS-over-TCP connection, the mandatory ciphersuites and TLS handling procedures operate as defined by those protocols.
-
-Reliability of STUN over TCP and TLS-over-TCP is handled by TCP itself, and there are no retransmissions at the STUN protocol level.
-
-However, for a request/response transaction, if the client has not received a response by Ti seconds after it sent the SYN to establish the connection, it considers the transaction to have timed out.
-
-Ti SHOULD be configurable and SHOULD have a default of 39.5s.
-
-This value has been chosen to equalize the TCP and UDP timeouts for the default initial RTO.
-
-In addition, if the client is unable to establish the TCP connection, or the TCP connection is reset or fails before a response is received, any request/response transaction in progress is considered to have failed.
-
-The client MAY send multiple transactions over a single TCP (or TLS- over-TCP) connection, and it MAY send another request before receiving a response to the previous.
-
-The client SHOULD keep the connection open until it:
-
-   o  has no further STUN requests or indications to send over that
-      connection, and
-
-   o  has no plans to use any resources (such as a mapped address
-      (MAPPED-ADDRESS or XOR-MAPPED-ADDRESS) or relayed address
-      [BEHAVE-TURN]) that were learned though STUN requests sent over
-      that connection, and
-
-   o  if multiplexing other application protocols over that port, has
-      finished using that other application, and
-
-   o  if using that learned port with a remote peer, has established
-      communications with that remote peer, as is required by some TCP
-      NAT traversal techniques (e.g., [MMUSIC-ICE-TCP]).
-
-At the server end, the server SHOULD keep the connection open, and let the client close it, unless the server has determined that the connection has timed out (for example, due to the client disconnecting from the network).
-
-Bindings learned by the client will remain valid in intervening NATs only while the connection remains open.
-
-Only the client knows how long it needs the binding.
-
-The server SHOULD NOT close a connection if a request was received over that connection for which a response was not sent.
-
-A server MUST NOT ever open a connection back towards the client in order to send a response.
-
-Servers SHOULD follow best practices regarding connection management in cases of overload.
-
+## Sending over TCP or TLS-over-TCP
+- In some usages of STUN, STUN is sent as the only protocol over the TCP connection.
+    - In this case, it can be sent without the aid of any additional framing or demultiplexing.
+    - In other usages, or with other extensions, it may be multiplexed with other data over a TCP connection.
+- The STUN service running on the well-known port or ports discovered through the DNS procedures is for STUN alone, and not for STUN multiplexed with other data.
+- When additional framing is utilized, the usage will specify how the client knows to apply it and what port to connect to.
+- When STUN is run by itself over TLS-over-TCP,
+    - the TLS_RSA_WITH_AES_128_CBC_SHA ciphersuite MUST be implemented at a minimum.
+    - Implementations MAY also support any other ciphersuite.
+- When it receives the TLS Certificate message,
+    - the client SHOULD verify the certificate and inspect the site identified by the certificate.
+- If the certificate is invalid or revoked, or if it does not identify the appropriate party,
+    - the client MUST NOT send the STUN message or otherwise proceed with the STUN transaction.
+- The client MUST verify the identity of the server.
+    - To do that, it follows the identification procedures defined in [Section 3.1 of RFC 2818](https://tools.ietf.org/html/rfc2818#section-3.1).
+- Those procedures assume the client is dereferencing a URI.
+    - the client treats the domain name or IP address used in Section 8.1 as the host portion of the URI that has been dereferenced.
+    - Alternatively, a client MAY be configured with a set of domains or IP addresses that are trusted;
+        - if a certificate is received that identifies one of those domains or IP addresses,
+            - the client considers the identity of the server to be verified.
+- When STUN is run multiplexed with other protocols over a TLS-over-TCP connection,
+    - the mandatory ciphersuites and TLS handling procedures operate as defined by those protocols.
+- Reliability of STUN over TCP and TLS-over-TCP is handled by TCP itself, and there are no retransmissions at the STUN protocol level.
+    - However, for a request/response transaction,
+        - if the client has not received a response by Ti seconds after it sent the SYN to establish the connection,
+        - it considers the transaction to have timed out.
+        - Ti SHOULD be configurable and SHOULD have a default of 39.5s.
+            - This value has been chosen to equalize the TCP and UDP timeouts for the default initial RTO.
+    - In addition, if the client is unable to establish the TCP connection,
+        - or the TCP connection is reset or fails before a response is received,
+        - any request/response transaction in progress is considered to have failed.
+- The client MAY send multiple transactions over a single TCP (or TLS- over-TCP) connection,
+    - and it MAY send another request before receiving a response to the previous.
+- The client SHOULD keep the connection open until it:
+    - has no further STUN requests or indications to send over that connection,
+    - has no plans to use any resources (such as a mapped address (MAPPED-ADDRESS or XOR-MAPPED-ADDRESS) or relayed address [BEHAVE-TURN]) that were learned though STUN requests sent over that connection,
+    - if multiplexing other application protocols over that port,
+        - has finished using that other application,
+    - if using that learned port with a remote peer,
+        - has established communications with that remote peer, as is required by some TCP NAT traversal techniques.
+- At the server end,
+    - the server SHOULD keep the connection open,
+    - and let the client close it,
+    - unless the server has determined that the connection has timed out (for example, due to the client disconnecting from the network).
+- Bindings learned by the client will remain valid in intervening NATs only while the connection remains open.
+- Only the client knows how long it needs the binding.
+- The server SHOULD NOT close a connection if a request was received over that connection for which a response was not sent.
+- A server MUST NOT ever open a connection back towards the client in order to send a response.
+- Servers SHOULD follow best practices regarding connection management in cases of overload.
 
 ## Receiving a STUN Message
 When a STUN agent receives a STUN message, it first checks that the message obeys the rules of Section 6.
@@ -272,6 +241,9 @@ When a STUN agent receives a STUN message, it first checks that the message obey
 - A basic STUN server is not a solution for NAT traversal by itself.
     - However, it can be utilized as part of a solution through STUN usages.
 - the STUN server functionality in an agent supporting connectivity checks would utilize short-term credentials.
+
+
+# [WIP] DNS Discovery of a Server
 
 
 # Short-Term Credential Mechanism
