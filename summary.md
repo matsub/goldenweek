@@ -1,7 +1,7 @@
 # Memo of RFC5389 (for myself)
 This is a memo for me to implement rfc5389. source is here: https://tools.ietf.org/html/rfc5389
 
-will update WIPs if i feel like it.
+will update if i feel like it.
 
 # Header Structure
 ```
@@ -275,7 +275,7 @@ When a STUN agent receives a STUN message, it first checks that the message obey
 
 # [WIP] Long-Term Credential Mechanism
 
-# [WIP] STUN Attributes
+# STUN Attributes
 - After the STUN header are zero or more attributes.
 - Each attribute MUST be TLV encoded, with a 16-bit type, 16-bit length, and value. # TLV=Type-length-value
 - Each STUN attribute MUST end on a 32-bit boundary.
@@ -473,23 +473,23 @@ key = SASLprep(password)
     - The client should try again.
 
 ## REALM
-The REALM attribute may be present in requests and responses.
-It contains text that meets the grammar for "realm-value" as described in RFC 3261 [RFC3261] but without the double quotes and their surrounding whitespace.
-That is, it is an unquoted realm-value (and is therefore a sequence of qdtext or quoted-pair).
-It MUST be a UTF-8 [RFC3629] encoded sequence of less than 128 characters (which can be as long as 763 bytes), and MUST have been processed using SASLprep [RFC4013].
-Presence of the REALM attribute in a request indicates that long-term credentials are being used for authentication.
-Presence in certain error responses indicates that the server wishes the client to use a long-term credential for authentication.
+- The REALM attribute may be present in requests and responses.
+- It contains text that meets the grammar for "realm-value" as described in RFC3261 but without the double quotes and their surrounding whitespace.
+- That is, it is an unquoted realm-value (and is therefore a sequence of qdtext or quoted-pair).
+- It MUST be a UTF-8 encoded sequence of less than 128 characters, and MUST have been processed using SASLprep.
+- Presence of the REALM attribute in a request indicates that long-term credentials are being used for authentication.
+- Presence in certain error responses indicates that the server wishes the client to use a long-term credential for authentication.
 
 ## NONCE
-The NONCE attribute may be present in requests and responses.
-It contains a sequence of qdtext or quoted-pair, which are defined in RFC 3261 [RFC3261].
-Note that this means that the NONCE attribute will not contain actual quote characters.
-See RFC 2617 [RFC2617], Section 4.3, for guidance on selection of nonce values in a server.
-It MUST be less than 128 characters (which can be as long as 763 bytes).
+- The NONCE attribute may be present in requests and responses.
+- It contains a sequence of qdtext or quoted-pair, which are defined in RFC 3261.
+    - Note that this means that the NONCE attribute will not contain actual quote characters.
+- See [RFC2617 Section 4.3](https://tools.ietf.org/html/rfc7616#section-5.4), for guidance on selection of nonce values in a server.
+- It MUST be less than 128 characters.
 
 ## UNKNOWN-ATTRIBUTES
-The UNKNOWN-ATTRIBUTES attribute is present only in an error response when the response code in the ERROR-CODE attribute is 420.
-The attribute contains a list of 16-bit values, each of which represents an attribute type that was not understood by the server.
+- The UNKNOWN-ATTRIBUTES attribute is present only in an error response when the response code in the ERROR-CODE attribute is 420.
+- The attribute contains a list of 16-bit values, each of which represents an attribute type that was not understood by the server.
 
 ```
  0                   1                   2                   3
@@ -501,70 +501,70 @@ The attribute contains a list of 16-bit values, each of which represents an attr
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ```
 
-> Note: In [RFC3489], this field was padded to 32 by duplicating the last attribute.
+> Note:
+In RFC3489, this field was padded to 32 by duplicating the last attribute.
 In this version of the specification, the normal padding rules for attributes are used instead.
 
 ## SOFTWARE
-The SOFTWARE attribute contains a textual description of the software being used by the agent sending the message.
-It is used by clients and servers.
-Its value SHOULD include manufacturer and version number.
-The attribute has no impact on operation of the protocol, and serves only as a tool for diagnostic and debugging purposes.
-The value of SOFTWARE is variable length.
-It MUST be a UTF-8 [RFC3629] encoded sequence of less than 128 characters (which can be as long as 763 bytes).
+- The SOFTWARE attribute contains a textual description of the software being used by the agent sending the message.
+- Its value SHOULD include manufacturer and version number.
+- The attribute has no impact on operation of the protocol, and serves only as a tool for diagnostic and debugging purposes.
+- The value of SOFTWARE is variable length.
+- It MUST be a UTF-8 encoded sequence of less than 128 characters.
 
 ## ALTERNATE-SERVER
-The alternate server represents an alternate transport address identifying a different STUN server that the STUN client should try.
-It is encoded in the same way as MAPPED-ADDRESS, and thus refers to a single server by IP address.
-The IP address family MUST be identical to that of the source IP address of the request.
+- The alternate server represents an alternate transport address identifying a different STUN server that the STUN client should try.
+- It is encoded in the same way as MAPPED-ADDRESS, and thus refers to a single server by IP address.
+- The IP address family MUST be identical to that of the source IP address of the request.
 
-# [WIP] IANA Considerations
-## [WIP] STUN Methods Registry
-A STUN method is a hex number in the range 0x000 - 0xFFF.  The encoding of STUN method into a STUN message is described in Section 6.
+# IANA Considerations
+## STUN Methods Registry
+- A STUN method is a hex number in the range `0x000 - 0xFFF`.
 
 - The initial STUN methods are:
-    - 0x000: (Reserved)
-    - 0x001: Binding
-    - 0x002: (Reserved; was SharedSecret)
+    - `0x000`: (Reserved)
+    - `0x001`: Binding
+    - `0x002`: (Reserved; was SharedSecret)
 
-STUN methods in the range 0x000 - 0x7FF are assigned by IETF Review [RFC5226].  STUN methods in the range 0x800 - 0xFFF are assigned by Designated Expert [RFC5226].  The responsibility of the expert is to verify that the selected codepoint(s) are not in use and that the request is not for an abnormally large number of codepoints.  Technical review of the extension itself is outside the scope of the designated expert responsibility.
-
-## [WIP] STUN Attribute Registry
-A STUN Attribute type is a hex number in the range 0x0000 - 0xFFFF.  STUN attribute types in the range 0x0000 - 0x7FFF are considered comprehension-required; STUN attribute types in the range 0x8000 - 0xFFFF are considered comprehension-optional.  A STUN agent handles unknown comprehension-required and comprehension-optional attributes differently.
+## STUN Attribute Registry
+- A STUN Attribute type is a hex number in the range 0x0000 - 0xFFFF.
+- STUN attribute types in the range 0x0000 - 0x7FFF are considered comprehension-required.
+- STUN attribute types in the range 0x8000 - 0xFFFF are considered comprehension-optional.
+- A STUN agent handles unknown comprehension-required and comprehension-optional attributes differently.
 
 - The initial STUN Attributes types are:
     - Comprehension-required range (0x0000-0x7FFF):
-        - 0x0000: (Reserved)
-        - 0x0001: MAPPED-ADDRESS
-        - 0x0002: (Reserved; was RESPONSE-ADDRESS)
-        - 0x0003: (Reserved; was CHANGE-ADDRESS)
-        - 0x0004: (Reserved; was SOURCE-ADDRESS)
-        - 0x0005: (Reserved; was CHANGED-ADDRESS)
-        - 0x0006: USERNAME
-        - 0x0007: (Reserved; was PASSWORD)
-        - 0x0008: MESSAGE-INTEGRITY
-        - 0x0009: ERROR-CODE
-        - 0x000A: UNKNOWN-ATTRIBUTES
-        - 0x000B: (Reserved; was REFLECTED-FROM)
-        - 0x0014: REALM
-        - 0x0015: NONCE
-        - 0x0020: XOR-MAPPED-ADDRESS
+        - `0x0000`: (Reserved)
+        - `0x0001`: MAPPED-ADDRESS
+        - `0x0002`: (Reserved; was RESPONSE-ADDRESS)
+        - `0x0003`: (Reserved; was CHANGE-ADDRESS)
+        - `0x0004`: (Reserved; was SOURCE-ADDRESS)
+        - `0x0005`: (Reserved; was CHANGED-ADDRESS)
+        - `0x0006`: USERNAME
+        - `0x0007`: (Reserved; was PASSWORD)
+        - `0x0008`: MESSAGE-INTEGRITY
+        - `0x0009`: ERROR-CODE
+        - `0x000A`: UNKNOWN-ATTRIBUTES
+        - `0x000B`: (Reserved; was REFLECTED-FROM)
+        - `0x0014`: REALM
+        - `0x0015`: NONCE
+        - `0x0020`: XOR-MAPPED-ADDRESS
     - Comprehension-optional range (0x8000-0xFFFF)
-        - 0x8022: SOFTWARE
-        - 0x8023: ALTERNATE-SERVER
-        - 0x8028: FINGERPRINT
+        - `0x8022`: SOFTWARE
+        - `0x8023`: ALTERNATE-SERVER
+        - `0x8028`: FINGERPRINT
 
-STUN Attribute types in the first half of the comprehension-required range (0x0000 - 0x3FFF) and in the first half of the comprehension- optional range (0x8000 - 0xBFFF) are assigned by IETF Review [RFC5226].  STUN Attribute types in the second half of the comprehension-required range (0x4000 - 0x7FFF) and in the second half of the comprehension-optional range (0xC000 - 0xFFFF) are assigned by Designated Expert [RFC5226].  The responsibility of the expert is to verify that the selected codepoint(s) are not in use, and that the request is not for an abnormally large number of codepoints.  Technical review of the extension itself is outside the scope of the designated expert responsibility.
+## STUN Error Code Registry
+- A STUN error code is a number in the range `0 - 699`.
+- STUN error codes are consistent in codepoint assignments and semantics with SIP and HTTP.
 
-## [WIP] STUN Error Code Registry
-A STUN error code is a number in the range 0 - 699.  STUN error codes are accompanied by a textual reason phrase in UTF-8 [RFC3629] that is intended only for human consumption and can be anything appropriate; this document proposes only suggested values.
-STUN error codes are consistent in codepoint assignments and semantics with SIP [RFC3261] and HTTP [RFC2616].  The initial values in this registry are given in Section 15.6.
+## STUN UDP and TCP Port Numbers
+```
+stun   3478/tcp   Session Traversal Utilities for NAT (STUN) port
+stun   3478/udp   Session Traversal Utilities for NAT (STUN) port
+```
 
-## [WIP] STUN UDP and TCP Port Numbers
-IANA has previously assigned port 3478 for STUN.  This port appears in the IANA registry under the moniker "nat-stun-port".  In order to align the DNS SRV procedures with the registered protocol service, IANA is requested to change the name of protocol assigned to port 3478 from "nat-stun-port" to "stun", and the textual name from "Simple Traversal of UDP Through NAT (STUN)" to "Session Traversal Utilities for NAT", so that the IANA port registry would read:
-
-- stun   3478/tcp   Session Traversal Utilities for NAT (STUN) port
-- stun   3478/udp   Session Traversal Utilities for NAT (STUN) port
-
-In addition, IANA has assigned port number 5349 for the "stuns" service, defined over TCP and UDP.  The UDP port is not currently defined; however, it is reserved for future use.
+- In addition, IANA has assigned port number 5349 for the "stuns" service, defined over TCP and UDP.
+- The UDP port is not currently defined; however, it is reserved for future use.
 
 # [WIP] Security Considerations
