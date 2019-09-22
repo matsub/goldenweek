@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  stun-server:
+    build: stun-tester
+    networks:
+      - sugoi
+
+  stun-client:
+    build: stun-tester
+    command: ["/usr/bin/turnutils_stunclient", "stun-server"]
+    networks:
+      - sugoi
+
+networks:
+  sugoi:
+    driver: bridge
