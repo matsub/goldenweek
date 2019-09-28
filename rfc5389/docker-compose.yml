@@ -1,6 +1,11 @@
 version: '3'
 
 services:
+  rust:
+    build: rust
+    networks:
+      - sugoi
+
   stun-server:
     build: stun-tester
     networks:
