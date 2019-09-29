@@ -13,7 +13,7 @@ services:
 
   stun-client:
     build: stun-tester
-    command: ["/usr/bin/turnutils_stunclient", "stun-server"]
+    command: ["/usr/bin/turnutils_stunclient", "rust"]
     depends_on:
       - stun-server
     networks:
