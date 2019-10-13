@@ -1,11 +1,6 @@
 version: '3'
 
 services:
-  rust:
-    build: rust
-    networks:
-      - sugoi
-
   stun-server:
     build: stun-tester
     networks:
@@ -13,7 +8,7 @@ services:
 
   stun-client:
     build: stun-tester
-    command: ["/usr/bin/turnutils_stunclient", "rust"]
+    command: ["/usr/bin/turnutils_stunclient", "stun-server"]
     depends_on:
       - stun-server
     networks:
