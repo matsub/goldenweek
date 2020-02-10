@@ -1,7 +1,7 @@
-mod stun;
+mod message;
 
 fn main() {
-    match stun::recv() {
+    match message::recv() {
         Ok(()) => {},
         Err(err) => println!("Error: {:?}", err),
     }
