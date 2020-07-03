@@ -24,55 +24,81 @@
 
 
 #[allow(dead_code)]
-pub struct MappedAddress {
+pub enum AttributeKind {
+    MappedAddress,
+    Username,
+    MessageIntegrity,
+    ErrorCode,
+    UnknownAttributes,
+    Realm,
+    Nonce,
+    XorMappedAddress,
+    Software,
+    AlternateServer,
+    Fingerprint,
 }
 
 
 #[allow(dead_code)]
-pub struct Username {
+trait Attribute {
+    // convert packet buffer to an Attribute instance
+    fn parse(buf: &[u8]) -> Result<Self, io::Error>;
+
+    // generate packet buffer
+    fn packetize(&self) -> Result<Vec<u8>, io::Error>;
 }
 
 
 #[allow(dead_code)]
-pub struct MessageIntegrity {
+struct MappedAddress {
 }
 
 
 #[allow(dead_code)]
-pub struct ErrorCode {
+struct Username {
 }
 
 
 #[allow(dead_code)]
-pub struct UnknownAttributes {
+struct MessageIntegrity {
 }
 
 
 #[allow(dead_code)]
-pub struct Realm {
+struct ErrorCode {
 }
 
 
 #[allow(dead_code)]
-pub struct Nonce {
+struct UnknownAttributes {
 }
 
 
 #[allow(dead_code)]
-pub struct XorMappedAddress {
+struct Realm {
 }
 
 
 #[allow(dead_code)]
-pub struct Software {
+struct Nonce {
 }
 
 
 #[allow(dead_code)]
-pub struct AlternateServer {
+struct XorMappedAddress {
 }
 
 
 #[allow(dead_code)]
-pub struct Fingerprint {
+struct Software {
+}
+
+
+#[allow(dead_code)]
+struct AlternateServer {
+}
+
+
+#[allow(dead_code)]
+struct Fingerprint {
 }

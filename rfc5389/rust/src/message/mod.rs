@@ -8,7 +8,7 @@ mod attributes;
 
 
 #[allow(dead_code)]
-enum ResponseType {
+enum MessageType {
     Request,
     Indication,
     SuccessResponse,
@@ -23,6 +23,48 @@ struct Message<'a> {
 }
 
 
+impl Message<'_> {
+    fn new(k_message_type: MessageType) -> Message {
+        // generate random transaction ID
+        let transaction_id: [u8; 12];
+
+        let header = Header::new(
+            k_message_type,
+            0,
+            &transaction_id[..]
+            );
+
+        return Message {
+            header: header,
+            attributes: vec![],
+        };
+    }
+
+    fn add(&self, attribute: Attribute) {
+        // increase length
+        // append attribtue
+    }
+
+    fn parse(buf: &[u8]) -> Result<Message, io::Error> {
+        // parse header
+        // parse message
+    }
+
+    fn packetize(&self) -> Result<Vec<u8>, io::Error> {
+        let mut header = vec![];
+
+        header.write_u16::<BigEndian>(self.message_type)?;
+        header.write_u16::<BigEndian>(self.message_length)?;
+        header.write_u32::<BigEndian>(self.magic_cookie)?;
+        for &b in self.transaction_id {
+            header.write_u8(b)?;
+        }
+
+        Ok(header)
+    }
+}
+
+
 struct Header<'a> {
     pub message_type: u16,
     pub message_length: u16,
@@ -32,31 +74,31 @@ struct Header<'a> {
 
 
 impl Header<'_> {
-    fn new(message_type: ResponseType, message_length: u16, transaction_id: &[u8]) -> Header {
+    fn new(k_message_type: MessageType, message_length: u16, transaction_id: &[u8]) -> Header {
         // only support binding request
-        let message_type_value: u16 = match message_type {
-           ResponseType::Request => 0x0001,
-           ResponseType::Indication => 0x0011,
-           ResponseType::SuccessResponse => 0x0101,
-           ResponseType::ErrorResponse => 0x0111,
+        let message_type: u16 = match k_message_type {
+            MessageType::Request => 0x0001,
+            MessageType::Indication => 0x0011,
+            MessageType::SuccessResponse => 0x0101,
+            MessageType::ErrorResponse => 0x0111,
         };
 
         return Header {
-            message_type: message_type_value,
+            message_type: message_type,
             message_length: message_length,
             magic_cookie: 0x2112a442,
             transaction_id: transaction_id,
         };
     }
 
-    fn parse(recv_buf: &[u8]) -> Result<Header, io::Error> {
-        let mut rdr = Cursor::new(recv_buf);
+    fn parse(buf: &[u8]) -> Result<Header, io::Error> {
+        let mut rdr = Cursor::new(buf);
 
         Ok(Header {
             message_type: rdr.read_u16::<BigEndian>()?,
             message_length: rdr.read_u16::<BigEndian>()?,
             magic_cookie: 0x2112a442,
-            transaction_id: &recv_buf[8..20],
+            transaction_id: &buf[8..20],
         })
     }
 
@@ -232,7 +274,7 @@ fn generate_response(req_header: &Header) -> Result<Vec<u8>, io::Error> {
 
     let mut message = generate_response_message()?;
     let header = Header::new(
-        ResponseType::SuccessResponse,
+        MessageType::SuccessResponse,
         message.len() as u16,
         req_header.transaction_id
         );
